@@ -1,7 +1,6 @@
 {
   "name": "Slate",
   "short_name": "Slate",
-  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#F4F1E6",
