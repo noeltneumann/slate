@@ -118,6 +118,11 @@ h2.sec.late{color:var(--tomato)}
   border:1px solid var(--line)}
 .mins button.on{border-color:var(--leaf);color:var(--green)}
 .mins button.skip{color:var(--mute);font-weight:500}
+.mins button.drained{color:var(--tomato)}
+.mins button.better{color:var(--leaf)}
+.tray .step{display:flex;gap:8px;align-items:baseline;margin:0 0 10px}
+.tray .step b{font:400 14px/1.3 var(--serif);color:var(--ink)}
+.tray .step i{font-style:normal;font-size:11.5px;color:var(--mute)}
 .edit{border-top:1px solid var(--line);padding:14px;display:flex;flex-direction:column;gap:12px;background:var(--paper)}
 .edit label{font:600 10.5px/1 var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--mute);
   display:block;margin-bottom:6px}
@@ -254,6 +259,7 @@ var catFilter = "";
 var calMonth = null;      // "YYYY-MM"
 var calDay = null;
 var openTray = null, openEdit = null, busy = false;
+var trayStep = "mins", trayMins = null, trayEnergy = null;
 
 var $ = function(s){ return document.querySelector(s); };
 var box = $("#box"), flash = $("#flash");
@@ -415,8 +421,23 @@ function rowHTML(t){
   "</div>";
 }
 function trayHTML(t){
-  var opts = [2,5,10,15,20,30,45,60,90,120], guess = eff(t);
-  return '<div class="tray"><p>How long did that actually take?</p><div class="mins">' +
+  if (trayStep === "energy") {
+    return '<div class="tray"><div class="step"><b>How did that feel?</b></div><div class="mins">' +
+      '<button class="drained" data-act="energy" data-e="drained">Drained me</button>' +
+      '<button data-act="energy" data-e="fine">Fine</button>' +
+      '<button class="better" data-act="energy" data-e="better">Left me better</button>' +
+      '<button class="skip" data-act="energy" data-e="">skip</button></div></div>';
+  }
+  if (trayStep === "deleg") {
+    return '<div class="tray"><div class="step"><b>Could someone else do this?</b><i>asked once, ever</i></div>' +
+      '<div class="mins">' +
+      '<button data-act="deleg" data-d="yes">Anyone could</button>' +
+      '<button data-act="deleg" data-d="partly">Partly</button>' +
+      '<button data-act="deleg" data-d="no">Has to be me</button>' +
+      '<button class="skip" data-act="deleg" data-d="">later</button></div></div>';
+  }
+  var opts = [2,5,10,15,20,30,45,60,90,120,180,240], guess = eff(t);
+  return '<div class="tray"><div class="step"><b>How long did that actually take?</b></div><div class="mins">' +
     opts.map(function(m){
       return '<button data-act="done" data-m="' + m + '"' + (m === guess ? ' class="on"' : "") + ">" + fmtMins(m) + "</button>";
     }).join("") +
@@ -441,6 +462,11 @@ function editHTML(t){
       '<div><label>Minutes</label><input data-f="estimate_minutes" type="number" inputmode="numeric" min="1" value="' + (t.estimate_minutes||15) + '"></div>' +
     "</div>" +
     '<div><label>Due</label><input data-f="due_on" type="date" value="' + esc(t.due_on || "") + '"></div>' +
+    '<div><label>Could someone else do this?</label><select data-f="delegable">' +
+      ['','yes','partly','no'].map(function(v){
+        var lbl = {"":"Not said","yes":"Anyone could","partly":"Partly","no":"Has to be me"}[v];
+        return '<option value="' + v + '"' + ((t.delegable||"") === v ? " selected" : "") + ">" + lbl + "</option>";
+      }).join("") + "</select></div>" +
     '<div><label>Repeats</label><select data-f="recur_mode">' +
       '<option value=""' + (mode === "" ? " selected" : "") + ">One-off</option>" +
       '<option value="floating"' + (mode === "floating" ? " selected" : "") + ">N days after I last did it</option>" +
@@ -604,6 +630,35 @@ function renderCal(){
   $("#v-cal").innerHTML = head + '<div class="grid">' + ghs + cells + "</div>" + detail;
 }
 
+/* how many times a year this actually lands on her */
+function perYear(t){
+  if (t.recur_mode === "floating" && t.recur_interval_days) return 365 / t.recur_interval_days;
+  if (t.recur_mode === "fixed") {
+    var r = t.recur_rule || "";
+    if (/^daily/.test(r)) return 365;
+    var m = r.match(/^every:(\d+)/); if (m) return 365 / Math.max(1, +m[1]);
+    if (/^weekly:/.test(r)) return 52 * Math.max(1, r.slice(7).split(",").filter(Boolean).length);
+    if (/^monthly:/.test(r)) return 12;
+    if (/^yearly:/.test(r)) return 1;
+  }
+  return 1;
+}
+/* how it has felt, from the completions we have */
+function feelOf(taskId){
+  var d=0,f=0,b=0;
+  (S.recent||[]).forEach(function(c){
+    if (c.task_id !== taskId) return;
+    if (c.energy === "drained") d++; else if (c.energy === "fine") f++; else if (c.energy === "better") b++;
+  });
+  var n=d+f+b;
+  return { n:n, drain: n ? d/n : 0, lift: n ? b/n : 0 };
+}
+function hrs(mins){
+  var hh = mins/60;
+  if (hh < 1) return Math.round(mins) + "m";
+  return (hh < 10 ? hh.toFixed(1) : Math.round(hh)) + "h";
+}
+
 function renderReview(){
   var today = S.today, r = S.recent || [];
   var todayRows = r.filter(function(c){ return c.done_on === today; });
@@ -660,6 +715,44 @@ function renderReview(){
       }).join("") + "</table>";
   }
 
+  /* what is worth handing off */
+  var cand = S.tasks.map(function(t){
+      var f = feelOf(t.id), py = perYear(t), mins = eff(t) * py;
+      return { t:t, f:f, py:py, mins:mins, score: mins * (0.6 + f.drain) };
+    })
+    .filter(function(x){ return (x.t.delegable === "yes" || x.t.delegable === "partly") && x.mins >= 20; })
+    .sort(function(a,b){ return b.score - a.score; });
+
+  if (cand.length) {
+    html += '<h2 class="sec">Worth handing off<span>hours a year</span></h2><table class="t">' +
+      '<tr><th>Task</th><th class="num">A year</th><th>How it feels</th></tr>' +
+      cand.slice(0,12).map(function(x){
+        var note = x.f.n === 0 ? "not rated yet"
+          : x.f.drain >= .5 ? "drains you" : x.f.lift >= .5 ? "you like it" : "neutral";
+        return "<tr><td>" + esc(x.t.title) + (x.t.delegable === "partly" ? " <span class=\"pill\">partly</span>" : "") +
+          '</td><td class="num' + (x.f.drain >= .5 ? " bad" : "") + '">' + hrs(x.mins) +
+          "</td><td>" + note + "</td></tr>";
+      }).join("") + "</table>";
+  }
+
+  /* and what to protect */
+  var keep = S.tasks.map(function(t){ return { t:t, f:feelOf(t.id) }; })
+    .filter(function(x){ return x.f.n >= 2 && x.f.lift >= .5; })
+    .sort(function(a,b){ return b.f.lift - a.f.lift; });
+  if (keep.length) {
+    html += '<h2 class="sec">Worth keeping<span>these give something back</span></h2><table class="t">' +
+      keep.slice(0,8).map(function(x){
+        return "<tr><td>" + esc(x.t.title) + '</td><td class="num">' + Math.round(x.f.lift*100) + "%</td></tr>";
+      }).join("") + "</table>";
+  }
+
+  var unrated = S.tasks.filter(function(t){ return !t.delegable && eff(t) * perYear(t) >= 60; }).length;
+  if (unrated) {
+    html += '<div class="card" style="margin-top:14px"><p style="margin:0">' + unrated +
+      " task" + (unrated===1?"":"s") + " worth more than an hour a year haven't been rated for whether someone else could do them. " +
+      "You'll be asked the first time you tick each one off.</p></div>";
+  }
+
   html += '<h2 class="sec">Recently done</h2>';
   if (!r.length) html += '<div class="empty">Nothing logged yet.<br>Tick something off and it lands here.</div>';
   else html += '<div class="list">' + r.slice(0,50).map(function(c){
@@ -669,6 +762,8 @@ function renderReview(){
     return '<div class="donerow" data-cid="' + c.id + '"><div class="rtitle">' + esc(c.title) +
       '<div class="meta">' + esc(agoWords(c.done_on, today)) + ' <span class="pill">' + esc(note) + "</span>" +
       (c.days_late > 0 ? ' <span class="pill late">' + c.days_late + "d late</span>" : "") +
+      (c.energy === "drained" ? ' <span class="pill" style="color:var(--tomato)">drained</span>' :
+       c.energy === "better" ? ' <span class="pill" style="color:var(--leaf)">better</span>' : "") +
       "</div></div><button class=\"undo\" data-act=\"undo\">undo</button></div>";
   }).join("") + "</div>";
 
@@ -739,6 +834,7 @@ function currentEdit(row){
     title: get("title"), category_id: get("category_id"),
     estimate_minutes: Math.max(1, +get("estimate_minutes") || 15),
     due_on: get("due_on") || null,
+    delegable: get("delegable") || null,
     recur_mode: mode || null, recur_interval_days: null, recur_rule: null
   };
   if (mode === "floating") patch.recur_interval_days = Math.max(1, +get("recur_interval_days") || 7);
@@ -770,14 +866,37 @@ document.addEventListener("click", function(e){
 
   if (act === "mon") { calMonth = shiftMonth(calMonth, +btn.dataset.n); calDay = null; renderCal(); return; }
   if (act === "day") { calDay = (calDay === btn.dataset.d) ? null : btn.dataset.d; renderCal(); return; }
-  if (act === "tray") { openTray = (openTray === id) ? null : id; openEdit = null; render(); return; }
+  if (act === "tray") { openTray = (openTray === id) ? null : id; openEdit = null; trayStep = "mins"; trayMins = trayEnergy = null; render(); return; }
   if (act === "edit") { openEdit = (openEdit === id) ? null : id; openTray = null; render(); return; }
 
   if (act === "done") {
-    if (busy) return; busy = true;
-    var m = btn.dataset.m; openTray = null;
-    api({ action:"complete", id:id, actual_minutes: m === "" ? null : +m })
-      .then(function(j){ say(j.next_due_on ? "Logged. Back <b>" + esc(dueWords(j.next_due_on, S.today)) + "</b>" : "Logged."); return load(); })
+    trayMins = btn.dataset.m === "" ? null : +btn.dataset.m;
+    trayStep = "energy";
+    render();
+    return;
+  }
+
+  if (act === "energy" || act === "deleg") {
+    if (busy) return;
+    var task = null;
+    for (var i = 0; i < S.tasks.length; i++) if (S.tasks[i].id === id) task = S.tasks[i];
+
+    if (act === "energy") {
+      trayEnergy = btn.dataset.e || null;
+      if (task && !task.delegable) { trayStep = "deleg"; render(); return; }
+    }
+    var deleg = act === "deleg" ? (btn.dataset.d || null) : null;
+
+    busy = true;
+    var mins = trayMins, en = trayEnergy;
+    openTray = null; trayStep = "mins"; trayMins = null; trayEnergy = null;
+
+    api({ action:"complete", id:id, actual_minutes: mins, energy: en })
+      .then(function(j){
+        say(j.next_due_on ? "Logged. Back <b>" + esc(dueWords(j.next_due_on, S.today)) + "</b>" : "Logged.");
+        if (deleg) return api({ action:"set_delegable", id:id, delegable:deleg });
+      })
+      .then(function(){ return load(); })
       .catch(function(err){ say(esc(err.message)); })
       .then(function(){ busy = false; });
     return;
