@@ -159,6 +159,16 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 .catline b{flex:1;font-weight:600}
 .catline span{color:var(--mute);font-size:13px}
 footer{padding:26px 0 40px;text-align:center;color:var(--mute);font-size:12px}
+body.quick nav,body.quick main,body.quick footer{display:none}
+body.quick header{position:static;border-bottom:0}
+body.quick .cap{padding:22px 0 10px;align-items:stretch}
+body.quick #box{min-height:132px;font-size:18px;line-height:1.4}
+body.quick #add{align-self:flex-end}
+#quickzone{padding-bottom:30px}
+#added div{font-size:14.5px;color:var(--mute);padding:9px 2px;border-bottom:1px solid var(--line)}
+#added div:first-child{border-top:1px solid var(--line)}
+#added b{color:var(--ink);font-weight:600}
+.quicklink{display:block;text-align:center;padding:20px;color:var(--mute);font-size:14px}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -172,6 +182,10 @@ footer{padding:26px 0 40px;text-align:center;color:var(--mute);font-size:12px}
       <button id="add">Add</button>
     </div>
     <div id="flash"></div>
+    <div id="quickzone" hidden>
+      <div id="added"></div>
+      <a class="quicklink" href="./">See the whole list</a>
+    </div>
   </div>
 </header>
 
@@ -212,6 +226,9 @@ var API = "https://npjzhuqggkbbwidghrjr.supabase.co/functions/v1/api";
 var qk = new URLSearchParams(location.search).get("k");
 if (qk) { try { localStorage.setItem("slate_key", qk); } catch(e){} }
 var KEY = qk || (function(){ try { return localStorage.getItem("slate_key"); } catch(e){ return null; } })() || "";
+
+var QUICK = new URLSearchParams(location.search).has("add");
+if (QUICK) document.body.classList.add("quick");
 
 var S = { today:"", tasks:[], categories:[], recent:[], category_history:[], settings:{} };
 var view = "now";
@@ -304,6 +321,16 @@ function submit(){
       say(t.length === 1
         ? "Added <b>" + esc(t[0]) + "</b>"
         : "Added <b>" + t.length + "</b> things");
+      if (QUICK) {
+        var box2 = $("#added");
+        (j.tasks || []).slice().reverse().forEach(function(task){
+          var d = document.createElement("div");
+          d.innerHTML = "<b>" + esc(task.title) + "</b> \u00b7 " + esc(task.estimate_minutes || 15) + "m";
+          box2.insertBefore(d, box2.firstChild);
+        });
+        try { box.focus(); } catch(e){}
+        return;
+      }
       return load();
     })
     .catch(function(e){ say("Didn't save: " + esc(e.message)); })
@@ -813,6 +840,10 @@ if (!KEY) {
     location.replace(location.pathname);
   };
   $("#keyin").addEventListener("keydown", function(e){ if (e.key === "Enter") $("#keygo").click(); });
+} else if (QUICK) {
+  $("#quickzone").hidden = false;
+  document.title = "Add to Slate";
+  setTimeout(function(){ try { box.focus(); } catch(e){} }, 60);
 } else {
   load();
 }
