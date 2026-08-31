@@ -27,12 +27,14 @@
   --serif:ui-serif,"Iowan Old Style",Georgia,"Times New Roman",serif;
   --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   --r:14px;
+  color-scheme:only light;
 }
+/* One committed look, day or night: the ground stays green, the cards stay bone.
+   At night the bone eases off a little so it isn't a torch in a dark room. */
 @media (prefers-color-scheme:dark){
   :root{
-    --bg:#0E1F13; --bg2:#0A1810; --onbg:#D6E4CE; --onbg-dim:#7E9577;
-    --card:#16291B; --card2:#1E3624; --ink:#E7EEE2; --mute:#8CA286; --line:#284631;
-    --tomato:#E07A66; --clay:#C8906F; --leaf:#7FAF69;
+    --bg:#193F27; --bg2:#143020;
+    --card:#E7E3D6; --card2:#DBD6C5; --line:#CDC7B4;
   }
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -71,7 +73,6 @@ input,select,textarea{font:inherit;color:inherit}
 }
 .iconbtn.on{background:var(--tomato);color:#fff}
 #add{height:44px;padding:0 19px;flex:none;border-radius:11px;background:var(--bg);color:var(--onbg);font-weight:600}
-@media (prefers-color-scheme:dark){#add{background:var(--leaf);color:#0E1F13}}
 #flash{font-size:13px;color:var(--onbg-dim);padding:8px 3px 0;min-height:0}
 #flash b{color:var(--onbg)}
 
@@ -141,7 +142,6 @@ h2.sec.late{color:var(--tomato)}
 .chips button[aria-pressed=true]{background:var(--leaf);color:#fff;border-color:var(--leaf)}
 .editfoot{display:flex;gap:8px;justify-content:space-between;align-items:center}
 .save{padding:9px 18px;border-radius:9px;background:var(--bg);color:var(--onbg);font-weight:600}
-@media (prefers-color-scheme:dark){.save{background:var(--leaf);color:#0E1F13}}
 .del{color:var(--tomato);font-size:13.5px;font-weight:600}
 .btn{padding:8px 13px;border-radius:9px;background:var(--card);border:1px solid var(--line);font-weight:600;font-size:13px;color:var(--ink)}
 
@@ -150,10 +150,10 @@ h2.sec.late{color:var(--tomato)}
 .calhead b{font:400 19px/1 var(--serif);letter-spacing:.03em;color:var(--onbg)}
 .calnav{display:flex;gap:6px}
 .calnav button{width:36px;height:34px;border-radius:9px;background:var(--bg2);color:var(--onbg);font-size:15px}
-.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;max-width:430px}
 .gh{text-align:center;font:600 10px/1 var(--sans);letter-spacing:.1em;color:var(--onbg-dim);padding-bottom:5px}
 .cell{
-  position:relative;aspect-ratio:1;border-radius:9px;background:var(--bg2);
+  position:relative;aspect-ratio:1;max-height:62px;border-radius:9px;background:var(--bg2);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
   font-size:12.5px;color:var(--onbg-dim);overflow:hidden
 }
