@@ -143,6 +143,7 @@ h2.sec.late{color:var(--tomato)}
 .wk i.today{box-shadow:0 0 0 1.5px var(--green)}
 .rcount{font-size:12px;color:var(--mute);font-variant-numeric:tabular-nums;flex:none;min-width:44px;text-align:right}
 .addr{display:flex;gap:8px;margin-top:8px}
+.addhint{margin-top:6px;font-size:12px;color:var(--mute);line-height:1.5}
 .addr input{flex:1;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card)}
 .addr input.num{flex:0 0 74px;text-align:center}
 .addlink{font-size:13px;color:var(--mute);font-weight:600;padding:8px 2px}
@@ -773,8 +774,9 @@ function renderRituals(){
     var form = addingRitual === kind
       ? '<div class="addr">' +
           '<input id="rt_' + kind + '" placeholder="' + (kind === "daily" ? "Something every day" : "Something most weeks") + '">' +
-          (kind === "weekly" ? '<input id="rn_' + kind + '" class="num" type="number" inputmode="numeric" min="1" max="7" value="3">' : "") +
-          '<button class="save" data-act="rsave" data-k="' + kind + '">Add</button></div>'
+          (kind === "weekly" ? '<input id="rn_' + kind + '" class="num" type="number" inputmode="numeric" min="1" max="7" value="3" title="Times a week you\'re aiming for">' : "") +
+          '<button class="save" data-act="rsave" data-k="' + kind + '">Add</button></div>' +
+          (kind === "weekly" ? '<div class="addhint">The number is how many times a week you\'re aiming for.</div>' : "")
       : '<button class="addlink" data-act="radd" data-k="' + kind + '">+ add</button>';
     return '<h2 class="sec">' + title + (note ? "<span>" + esc(note) + "</span>" : "") + "</h2>" +
       (list.length ? '<div class="list">' + list.map(function(r){ return ritualRow(r, today); }).join("") + "</div>" : "") +
