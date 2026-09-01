@@ -77,6 +77,12 @@ nav button[aria-selected=true]{color:var(--green);border-bottom-color:var(--toma
 
 /* ---------- filters ---------- */
 .filters{padding:14px 0 2px}
+.seg{display:flex;background:var(--paper2);border-radius:999px;padding:3px;margin-bottom:10px;
+  position:relative}
+.seg button{flex:1;padding:8px 6px;border-radius:999px;font-size:13.5px;font-weight:600;
+  color:var(--mute);white-space:nowrap;transition:color .18s}
+.seg button[aria-pressed=true]{background:var(--card);color:var(--green);
+  box-shadow:0 1px 2px rgba(31,42,29,.10)}
 .frow{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none;
   -webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
 .frow::-webkit-scrollbar{display:none}
@@ -276,8 +282,8 @@ footer{padding:34px 0 20px;text-align:center;color:var(--mute);font-size:11.5px;
   <div id="flash"></div>
 
   <nav id="tabs">
-    <button data-v="today" aria-selected="true">To do</button>
-    <button data-v="list" aria-selected="false">By category</button>
+    <button data-v="today" aria-selected="true">Tasks</button>
+    <button data-v="habits" aria-selected="false">Habits</button>
     <button data-v="cal" aria-selected="false">Calendar</button>
     <button data-v="review" aria-selected="false">Overview</button>
   </nav>
@@ -286,11 +292,9 @@ footer{padding:34px 0 20px;text-align:center;color:var(--mute);font-size:11.5px;
     <section id="v-today">
       <div id="f-today"></div>
       <div id="l-today"></div>
-      <div id="rituals"></div>
     </section>
-    <section id="v-list" hidden>
-      <div id="f-list"></div>
-      <div id="l-list"></div>
+    <section id="v-habits" hidden>
+      <div id="rituals"></div>
     </section>
     <section id="v-cal" hidden></section>
     <section id="v-review" hidden></section>
@@ -317,7 +321,8 @@ var calMonth = null;      // "YYYY-MM"
 var calDay = null;
 var openTray = null, openEdit = null, busy = false;
 var trayStep = "mins", trayMins = null, trayEnergy = null;
-var priOnly = false;            // the "needs to happen" filter
+var mode = "all";               // all | pri | time | cat
+var priOnly = false;
 var overTab = "doing";          // doing | keeping
 var addingRitual = null;        // "daily" | "weekly" while the inline form is open
 var lastLoad = 0;
@@ -582,41 +587,51 @@ function totalWords(rows){
 }
 
 /* ---------------- filters ---------------- */
-function filterBar(){
-  var times = [[5,"5 min"],[15,"15 min"],[30,"30 min"],[60,"An hour"],[0,"Any time"]];
-  var used = {};
-  S.tasks.forEach(function(t){ used[t.category_name || "Unsorted"] = true; });
-  var cats = S.categories.filter(function(c){ return used[c.name]; });
-  var anyPri = S.tasks.some(function(t){ return t.priority; });
-
-  return '<div class="filters">' +
-    '<div class="frow" data-f="time">' + times.map(function(p){
-      return '<button class="chip" data-m="' + p[0] + '" aria-pressed="' + (timeCap === p[0]) + '">' + p[1] + "</button>";
-    }).join("") + "</div>" +
-    '<div class="frow" data-f="cat">' +
-      (anyPri ? '<button class="chip pri" data-c="__pri__" aria-pressed="' + priOnly + '">' +
-        '<span class="dot"></span>Needs doing</button>' : "") +
-      '<button class="chip" data-c="" aria-pressed="' + (!priOnly && catFilter === "") + '">Everything</button>' +
-      cats.map(function(c){
-        return '<button class="chip" data-c="' + esc(c.name) + '" aria-pressed="' + (!priOnly && catFilter === c.name) + '">' +
+function secondRow(){
+  if (mode === "time") {
+    return '<div class="frow" data-f="time">' +
+      [[0,"Any"],[5,"5 min"],[15,"15 min"],[30,"30 min"],[60,"An hour"]].map(function(p){
+        return '<button class="chip" data-m="' + p[0] + '" aria-pressed="' + (timeCap === p[0]) + '">' + p[1] + "</button>";
+      }).join("") + "</div>";
+  }
+  if (mode === "cat") {
+    var used = {};
+    S.tasks.forEach(function(t){ used[t.category_name || "Unsorted"] = true; });
+    return '<div class="frow" data-f="cat">' +
+      '<button class="chip" data-c="" aria-pressed="' + (catFilter === "") + '">All of them</button>' +
+      S.categories.filter(function(c){ return used[c.name]; }).map(function(c){
+        return '<button class="chip" data-c="' + esc(c.name) + '" aria-pressed="' + (catFilter === c.name) + '">' +
           '<span class="dot" style="background:' + esc(c.color) + '"></span>' + esc(c.name) + "</button>";
-      }).join("") + "</div>" +
-  "</div>";
+      }).join("") + "</div>";
+  }
+  return "";
+}
+function filterBar(){
+  var anyPri = S.tasks.some(function(t){ return t.priority; });
+  var modes = [["all","All"],["pri","Priority"],["time","Time"],["cat","Category"]]
+    .filter(function(m){ return m[0] !== "pri" || anyPri; });
+  return '<div class="filters">' +
+    '<div class="seg" data-f="mode">' + modes.map(function(m){
+      return '<button data-o="' + m[0] + '" aria-pressed="' + (mode === m[0]) + '">' + m[1] + "</button>";
+    }).join("") + "</div>" +
+    '<div id="frow2">' + secondRow() + "</div></div>";
 }
 function syncChips(){
+  [].forEach.call(document.querySelectorAll('.seg[data-f="mode"] button'), function(b){
+    b.setAttribute("aria-pressed", String(mode === b.dataset.o));
+  });
   [].forEach.call(document.querySelectorAll('.frow[data-f="time"] .chip'), function(b){
     b.setAttribute("aria-pressed", String(timeCap === +b.dataset.m));
   });
   [].forEach.call(document.querySelectorAll('.frow[data-f="cat"] .chip'), function(b){
-    var c = b.dataset.c;
-    b.setAttribute("aria-pressed", String(c === "__pri__" ? priOnly : (!priOnly && catFilter === c)));
+    b.setAttribute("aria-pressed", String(catFilter === b.dataset.c));
   });
 }
 function pool(){
   return S.tasks.filter(function(t){
-    if (priOnly && !t.priority) return false;
-    if (timeCap && eff(t) > timeCap) return false;
-    if (!priOnly && catFilter && (t.category_name || "Unsorted") !== catFilter) return false;
+    if (mode === "pri" && !t.priority) return false;
+    if (mode === "time" && timeCap && eff(t) > timeCap) return false;
+    if (mode === "cat" && catFilter && (t.category_name || "Unsorted") !== catFilter) return false;
     return true;
   });
 }
@@ -625,31 +640,44 @@ function pool(){
 function renderToday(){
   document.getElementById("f-today").innerHTML = filterBar();
   renderTodayList();
-  renderRituals();
 }
 function renderTodayList(){
-  var today = S.today, p = pool();
-  var pri = [], g = { overdue:[], today:[], soon:[], anytime:[], later:[] };
-  p.forEach(function(t){
-    if (t.priority) pri.push(t); else g[bucketOf(t, today)].push(t);
-  });
-  pri.sort(function(a,b){
-    var ad = a.next_due_on || a.due_on || "9999", bd = b.next_due_on || b.due_on || "9999";
-    return ad < bd ? -1 : ad > bd ? 1 : 0;
-  });
-  g.anytime.sort(function(a,b){ return eff(a) - eff(b); });
+  var today = S.today, p = pool(), body;
 
-  var body =
-    section("Needs doing", totalWords(pri), pri, "late") +
-    section("Late", totalWords(g.overdue), g.overdue, "late") +
-    section("Today", totalWords(g.today), g.today) +
-    section("This week", totalWords(g.soon), g.soon) +
-    section("Whenever", totalWords(g.anytime), g.anytime) +
-    section("Later on", totalWords(g.later), g.later);
+  if (mode === "cat") {
+    /* grouped by category, priority floating to the top of each group */
+    var byCat = {};
+    p.forEach(function(t){ var k = t.category_name || "Unsorted"; (byCat[k] = byCat[k] || []).push(t); });
+    body = S.categories.map(function(c){ return c.name; }).filter(function(n){ return byCat[n]; }).map(function(n){
+      var rows = byCat[n].slice().sort(function(a,b){
+        if (a.priority !== b.priority) return a.priority ? -1 : 1;
+        var ad = a.next_due_on || a.due_on || "9999", bd = b.next_due_on || b.due_on || "9999";
+        return ad < bd ? -1 : ad > bd ? 1 : 0;
+      });
+      return section(n, totalWords(rows), rows);
+    }).join("");
+  } else {
+    var pri = [], g = { overdue:[], today:[], soon:[], anytime:[], later:[] };
+    p.forEach(function(t){
+      if (t.priority && mode !== "pri") pri.push(t); else g[bucketOf(t, today)].push(t);
+    });
+    pri.sort(function(a,b){
+      var ad = a.next_due_on || a.due_on || "9999", bd = b.next_due_on || b.due_on || "9999";
+      return ad < bd ? -1 : ad > bd ? 1 : 0;
+    });
+    g.anytime.sort(function(a,b){ return eff(a) - eff(b); });
+    body =
+      section("Priority", totalWords(pri), pri, "late") +
+      section("Late", totalWords(g.overdue), g.overdue, "late") +
+      section("Today", totalWords(g.today), g.today) +
+      section("This week", totalWords(g.soon), g.soon) +
+      section("Whenever", totalWords(g.anytime), g.anytime) +
+      section("Later on", totalWords(g.later), g.later);
+  }
 
   if (!body) {
-    body = '<div class="empty">' + (timeCap || catFilter || priOnly
-      ? "Nothing matches that filter."
+    body = '<div class="empty">' + (mode !== "all"
+      ? "Nothing matches that."
       : "Nothing on the list.<br>Put something in the box above.") + "</div>";
   }
   document.getElementById("l-today").innerHTML = body;
@@ -697,28 +725,12 @@ function renderRituals(){
       form;
   }
 
+  var wDone = weekly.filter(function(r){ return weekCount(r.id, today) >= r.target_per_week; }).length;
   document.getElementById("rituals").innerHTML =
-    block("daily", "Every day", daily.length ? dDone + " of " + daily.length : "", daily) +
-    block("weekly", "This week", "", weekly);
+    block("daily", "Every day", daily.length ? dDone + " of " + daily.length + " today" : "", daily) +
+    block("weekly", "This week", weekly.length ? wDone + " of " + weekly.length + " on target" : "", weekly);
 }
 
-function renderList(){
-  document.getElementById("f-list").innerHTML = filterBar();
-  renderListBody();
-}
-function renderListBody(){
-  var p = pool(), byCat = {};
-  p.forEach(function(t){ var k = t.category_name || "Unsorted"; (byCat[k] = byCat[k] || []).push(t); });
-  var body = S.categories.map(function(c){ return c.name; }).filter(function(n){ return byCat[n]; }).map(function(n){
-    var rows = byCat[n].slice().sort(function(a,b){
-      if (a.priority !== b.priority) return a.priority ? -1 : 1;
-      var ad = a.next_due_on || a.due_on || "9999", bd = b.next_due_on || b.due_on || "9999";
-      return ad < bd ? -1 : ad > bd ? 1 : 0;
-    });
-    return section(n, totalWords(rows), rows);
-  }).join("");
-  document.getElementById("l-list").innerHTML = body || '<div class="empty">Nothing matches that filter.</div>';
-}
 
 function renderCal(){
   var today = S.today, m = calMonth || monthOf(today);
@@ -831,8 +843,8 @@ function hrs(mins){
 
 function overSubtabs(){
   return '<div class="subtabs">' +
-    '<button data-act="over" data-o="doing" aria-pressed="' + (overTab==="doing") + '">Getting done</button>' +
-    '<button data-act="over" data-o="keeping" aria-pressed="' + (overTab==="keeping") + '">Keeping up</button></div>';
+    '<button data-act="over" data-o="doing" aria-pressed="' + (overTab==="doing") + '">Tasks</button>' +
+    '<button data-act="over" data-o="keeping" aria-pressed="' + (overTab==="keeping") + '">Habits</button></div>';
 }
 
 function renderReview(){
@@ -842,7 +854,7 @@ function renderReview(){
 function keepingHTML(){
   var today = S.today, rs = S.rituals || [];
   if (!rs.length) {
-    return '<div class="empty">Nothing on a rhythm yet.<br>Add your daily and weekly things on the To do page.</div>';
+    return '<div class="empty">No habits yet.<br>Add your daily and weekly ones on the Habits tab.</div>';
   }
   return rs.map(function(r){
     var hit = ritualHits(r.id), cells = "", done = 0;
@@ -923,6 +935,15 @@ function doingHTML(){
         var off = a.avg_estimate && Math.abs(a.avg_actual - a.avg_estimate) >= Math.max(5, a.avg_estimate * .3);
         return "<tr><td>" + esc(a.title) + '</td><td class="num' + (off ? " bad" : "") + '">' + fmtMins(a.avg_actual) +
                '</td><td class="num">' + (a.avg_estimate ? fmtMins(a.avg_estimate) : "\u2014") + "</td></tr>";
+      }).join("") + "</table>";
+  }
+
+  var ch = (S.category_history || []).filter(function(c){ return c.samples > 0; });
+  if (ch.length) {
+    html += '<h2 class="sec">By category</h2><table class="t">' +
+      '<tr><th>Category</th><th class="num">Average</th><th class="num">Times</th></tr>' +
+      ch.slice().sort(function(a,b){ return b.samples - a.samples; }).map(function(c){
+        return "<tr><td>" + esc(c.name) + '</td><td class="num">' + fmtMins(c.avg_actual) + '</td><td class="num">' + c.samples + "</td></tr>";
       }).join("") + "</table>";
   }
 
@@ -1014,17 +1035,16 @@ function renderSetup(){
 /* repaint just the task rows, so opening a tray doesn't rebuild filters and rhythms too */
 function redrawRows(){
   if (view === "today") renderTodayList();
-  else if (view === "list") renderListBody();
   else if (view === "cal") renderCal();
   else render();
 }
 
 function render(){
-  ["today","list","cal","review","setup"].forEach(function(v){ $("#v-" + v).hidden = (v !== view); });
+  ["today","habits","cal","review","setup"].forEach(function(v){ $("#v-" + v).hidden = (v !== view); });
   $("#gear").setAttribute("aria-pressed", String(view === "setup"));
   [].forEach.call($("#tabs").children, function(x){ x.setAttribute("aria-selected", String(x.dataset.v === view)); });
   if (view === "today") renderToday();
-  if (view === "list") renderList();
+  if (view === "habits") renderRituals();
   if (view === "cal") renderCal();
   if (view === "review") renderReview();
   if (view === "setup") renderSetup();
@@ -1070,18 +1090,24 @@ function currentEdit(row){
 }
 
 document.addEventListener("click", function(e){
+  var seg = e.target.closest('.seg[data-f="mode"] button');
+  if (seg) {
+    mode = seg.dataset.o;
+    timeCap = 0; catFilter = "";
+    /* only the row under the slider changes, so the slider itself is never rebuilt */
+    syncChips();
+    var f2 = document.getElementById("frow2");
+    if (f2) f2.innerHTML = secondRow(); else document.getElementById("f-today").innerHTML = filterBar();
+    renderTodayList();
+    return;
+  }
   var chip = e.target.closest(".frow .chip");
   if (chip) {
-    if (chip.parentNode.dataset.f === "time") {
-      timeCap = +chip.dataset.m;
-    } else if (chip.dataset.c === "__pri__") {
-      priOnly = !priOnly; catFilter = "";
-    } else {
-      priOnly = false; catFilter = chip.dataset.c;
-    }
+    if (chip.parentNode.dataset.f === "time") timeCap = +chip.dataset.m;
+    else catFilter = chip.dataset.c;
     /* only the list is rebuilt, so the chips never flicker or lose their place */
     syncChips();
-    if (view === "today") renderTodayList(); else if (view === "list") renderListBody();
+    renderTodayList();
     return;
   }
   var btn = e.target.closest("[data-act]");
