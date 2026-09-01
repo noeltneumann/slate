@@ -220,8 +220,14 @@ h2.sec.late{color:var(--tomato)}
 .dayhead{font:400 19px/1 var(--serif);color:var(--green);margin:24px 0 10px}
 .evrow{display:flex;gap:12px;align-items:baseline;background:var(--card);border-radius:var(--r);
   padding:12px 14px;box-shadow:var(--shadow)}
-.evtime{font-size:12px;color:var(--mute);flex:none;min-width:62px}
-.evname{font-size:15px}
+.evtime{font-size:12px;color:var(--mute);flex:none;min-width:88px}
+.evname{font-size:15px;flex:1;overflow-wrap:anywhere}
+.evrow.off .evname,.evrow.off .evtime{opacity:.5}
+.evprep{flex:none;align-self:center;font:inherit;font-size:11px;letter-spacing:.04em;text-transform:uppercase;
+  padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:transparent;
+  color:var(--mute);cursor:pointer}
+.evprep[aria-pressed=true]{border-style:dashed;color:var(--mute);opacity:.75}
+.evprep:not([aria-pressed=true]){border-color:var(--leaf);color:var(--green)}
 
 /* ---------- review ---------- */
 .stats{display:flex;gap:8px;margin:18px 0 4px}
@@ -836,10 +842,8 @@ function renderCal(){
     var nice = new Date(d2n(calDay)).toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric",timeZone:"UTC"});
     detail = '<div class="dayhead">' + esc(nice) + "</div>";
     if (!dn2.length && !du2.length && !ev2.length) detail += '<div class="empty">Nothing done, nothing due.</div>';
-    if (ev2.length) detail += '<h2 class="sec">On your calendar</h2><div class="list">' + ev2.map(function(e){
-      return '<div class="evrow"><span class="evtime">' + (e.all_day || !e.at_time ? "all day" : esc(hhmm(e.at_time))) +
-        '</span><span class="evname">' + esc(e.title) + "</span></div>";
-    }).join("") + "</div>";
+    if (ev2.length) detail += '<h2 class="sec">On your calendar</h2><div class="list">' +
+      ev2.map(function(e){ return eventRow(e, false); }).join("") + "</div>";
     if (dn2.length) detail += '<h2 class="sec">Finished<span>' + fmtMins(dn2.reduce(function(a,c){return a+minsOf(c);},0)) + "</span></h2>" +
       '<div class="list">' + dn2.map(function(c){
         return '<div class="donerow"><div class="rtitle">' + esc(c.title) +
@@ -848,7 +852,51 @@ function renderCal(){
     if (du2.length) detail += '<h2 class="sec">Due</h2><div class="list">' + du2.map(rowHTML).join("") + "</div>";
   }
 
-  $("#v-cal").innerHTML = head + '<div class="grid">' + ghs + cells + "</div>" + detail;
+  $("#v-cal").innerHTML = head + '<div class="grid">' + ghs + cells + "</div>" + detail + monthList(m, evBy);
+}
+
+/* is prep switched off for this event, and at what level */
+function muteOf(e){
+  var ms = S.event_mutes || [];
+  for (var i = 0; i < ms.length; i++) {
+    if (ms[i].key === e.uid) return "series";
+    if (ms[i].key === e.uid + "@" + e.on_date) return "once";
+  }
+  return "";
+}
+
+function eventRow(e, withDate){
+  var m = muteOf(e);
+  var when = e.all_day || !e.at_time ? "all day" : hhmm(e.at_time);
+  if (withDate) {
+    var WD = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+    when = WD[dow(e.on_date)] + " " + (+e.on_date.slice(8,10)) +
+      (e.all_day || !e.at_time ? "" : " · " + hhmm(e.at_time));
+  }
+  return '<div class="evrow' + (m ? " off" : "") + '">' +
+    '<span class="evtime">' + esc(when) + "</span>" +
+    '<span class="evname">' + esc(e.title) + (m === "once" ? ' <span class="pill">skipped once</span>' : "") + "</span>" +
+    '<button class="evprep" data-act="mute" data-uid="' + esc(e.uid) + '" data-t="' + esc(e.title) + '"' +
+      ' data-on="' + (m ? "0" : "1") + '" aria-pressed="' + (m === "series") + '" ' +
+      'title="' + (m ? "Start prepping for this again" : "Stop making prep tasks for this") + '">' +
+      (m === "series" ? "no prep" : "prep") + "</button></div>";
+}
+
+/* every event in the month on screen, so she can see what's coming without
+   tapping day by day */
+function monthList(m, evBy){
+  var all = [];
+  Object.keys(evBy).sort().forEach(function(d){
+    if (monthOf(d) === m) evBy[d].forEach(function(e){ all.push(e); });
+  });
+  var label = new Date(d2n(firstOf(m))).toLocaleDateString(undefined,{month:"long",timeZone:"UTC"});
+  if (!all.length) {
+    return '<h2 class="sec">Events in ' + esc(label) + "</h2>" +
+      '<div class="empty">' + (S.has_ics ? "Nothing on the calendar this month." :
+        "No calendar linked yet. The gear in the corner has the box for it.") + "</div>";
+  }
+  return '<h2 class="sec">Events in ' + esc(label) + "<span>" + all.length + "</span></h2>" +
+    '<div class="list">' + all.map(function(e){ return eventRow(e, true); }).join("") + "</div>";
 }
 
 /* how many times a year this actually lands on her */
@@ -1304,6 +1352,23 @@ document.addEventListener("click", function(e){
 
   if (act === "mon") { calMonth = shiftMonth(calMonth, +btn.dataset.n); calDay = null; renderCal(); return; }
   if (act === "day") { calDay = (calDay === btn.dataset.d) ? null : btn.dataset.d; renderCal(); return; }
+
+  if (act === "mute") {
+    var uid = btn.dataset.uid, turnOff = btn.dataset.on === "1";
+    /* paint it straight away, then tell the server */
+    S.event_mutes = (S.event_mutes || []).filter(function(x){
+      return x.key !== uid && String(x.key).indexOf(uid + "@") !== 0;
+    });
+    if (turnOff) S.event_mutes.push({ key:uid, uid:uid, on_date:null });
+    renderCal();
+    api({ action:"mute_event", uid:uid, title:btn.dataset.t, muted:turnOff })
+      .then(function(){
+        say((turnOff ? "No more prep for <b>" : "Prepping for <b>") + esc(btn.dataset.t) + "</b>");
+        return load();
+      })
+      .catch(function(err){ say(esc(err.message)); return load(); });
+    return;
+  }
   if (act === "tray") { openTray = (openTray === id) ? null : id; openEdit = null; trayStep = "mins"; trayMins = trayEnergy = null; redrawRows(); return; }
   if (act === "edit") { openEdit = (openEdit === id) ? null : id; openTray = null; redrawRows(); return; }
 
