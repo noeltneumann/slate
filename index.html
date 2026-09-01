@@ -77,13 +77,24 @@ nav button[aria-selected=true]{color:var(--green);border-bottom-color:var(--toma
 
 /* ---------- filters ---------- */
 .filters{padding:14px 0 2px}
-.frow{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none}
+.frow{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none;
+  -webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
 .frow::-webkit-scrollbar{display:none}
+.frow>*{scroll-snap-align:start}
+/* on anything wider than a phone the chips wrap instead of hiding off-screen */
+@media (min-width:620px){ .frow{flex-wrap:wrap;overflow:visible} }
+@media (max-width:619px){
+  .frow{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 30px),transparent);
+        mask-image:linear-gradient(to right,#000 calc(100% - 30px),transparent)}
+}
 .chip{flex:none;padding:7px 14px;border-radius:999px;font-size:13.5px;font-weight:500;
   background:transparent;color:var(--mute);white-space:nowrap;border:1px solid var(--line);
   display:flex;align-items:center;gap:7px}
 .chip[aria-pressed=true]{background:var(--deep);color:#F3F0E4;border-color:var(--deep)}
 .chip .dot{width:8px;height:8px}
+.chip.pri[aria-pressed=true]{background:var(--tomato);border-color:var(--tomato)}
+.chip.pri .dot{background:var(--tomato);border-radius:50%;transform:none}
+.chip.pri[aria-pressed=true] .dot{background:#fff}
 
 /* ---------- sections ---------- */
 h2.sec{font:400 13px/1 var(--serif);letter-spacing:.16em;text-transform:uppercase;color:var(--mute);
@@ -108,6 +119,42 @@ h2.sec.late{color:var(--tomato)}
 .pill{background:var(--paper2);border-radius:6px;padding:2px 8px;font-weight:600;font-size:11.5px}
 .pill.learn{color:var(--leaf)}
 .pill.late{background:var(--tomato);color:#fff}
+.prim{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--tomato);
+  margin-right:8px;vertical-align:middle;flex:none}
+
+/* ---------- rituals ---------- */
+.rrow{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);
+  display:flex;gap:12px;align-items:center;padding:13px 14px}
+.rrow .tick{margin-top:0}
+.rrow.on .tick{background:var(--leaf);border-color:var(--leaf);color:#fff}
+.rrow .rtitle{flex:1;font-size:15.5px;font-weight:600}
+.rrow.on .rtitle{color:var(--mute)}
+.wk{display:flex;gap:4px;flex:none}
+.wk i{width:9px;height:9px;border-radius:50%;background:var(--paper2);display:block}
+.wk i.hit{background:var(--leaf)}
+.wk i.today{box-shadow:0 0 0 1.5px var(--green)}
+.rcount{font-size:12px;color:var(--mute);font-variant-numeric:tabular-nums;flex:none;min-width:44px;text-align:right}
+.addr{display:flex;gap:8px;margin-top:8px}
+.addr input{flex:1;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card)}
+.addr input.num{flex:0 0 74px;text-align:center}
+.addlink{font-size:13px;color:var(--mute);font-weight:600;padding:8px 2px}
+
+/* ---------- overview sub-tabs ---------- */
+.subtabs{display:flex;gap:6px;margin:16px 0 4px}
+.subtabs button{padding:8px 15px;border-radius:999px;border:1px solid var(--line);
+  font-size:13.5px;font-weight:600;color:var(--mute)}
+.subtabs button[aria-pressed=true]{background:var(--deep);color:#F3F0E4;border-color:var(--deep)}
+
+/* ---------- consistency grid ---------- */
+.consist{background:var(--card);border-radius:var(--r);padding:14px;box-shadow:var(--shadow);margin-bottom:9px}
+.consist .ch{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:9px}
+.consist .ch b{font:400 16px/1.2 var(--serif)}
+.consist .ch span{font-size:12px;color:var(--mute)}
+.grid28{display:grid;grid-template-columns:repeat(14,1fr);gap:3px}
+.grid28 i{aspect-ratio:1;border-radius:3px;background:var(--paper2);display:block}
+.grid28 i.hit{background:var(--leaf)}
+.grid28 i.miss{background:var(--paper2)}
+.bseg{width:100%;display:block}
 .more{width:28px;flex:none;align-self:stretch;color:var(--mute);font-size:18px;line-height:1}
 
 /* ---------- tray + editor ---------- */
@@ -168,7 +215,10 @@ h2.sec.late{color:var(--tomato)}
 .bars{display:flex;align-items:flex-end;gap:4px;height:100px;background:var(--card);border-radius:var(--r);
   padding:12px 12px 8px;box-shadow:var(--shadow)}
 .bcol{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:5px;height:100%}
-.bfill{width:100%;background:var(--leaf);border-radius:3px 3px 0 0;min-height:2px;opacity:.9}
+.bfill{width:100%;display:flex;flex-direction:column-reverse;border-radius:3px 3px 0 0;overflow:hidden;min-height:2px}
+.bfill .bseg{width:100%}
+.blegend{display:flex;flex-wrap:wrap;gap:9px;margin-top:10px;font-size:11.5px;color:var(--mute)}
+.blegend span{display:flex;align-items:center;gap:5px}
 .blab{font-size:9.5px;color:var(--mute)}
 table.t{width:100%;border-collapse:collapse;background:var(--card);border-radius:var(--r);overflow:hidden;
   box-shadow:var(--shadow)}
@@ -229,12 +279,19 @@ footer{padding:34px 0 20px;text-align:center;color:var(--mute);font-size:11.5px;
     <button data-v="today" aria-selected="true">To do</button>
     <button data-v="list" aria-selected="false">By category</button>
     <button data-v="cal" aria-selected="false">Calendar</button>
-    <button data-v="review" aria-selected="false">Review</button>
+    <button data-v="review" aria-selected="false">Overview</button>
   </nav>
 
   <main>
-    <section id="v-today"></section>
-    <section id="v-list" hidden></section>
+    <section id="v-today">
+      <div id="f-today"></div>
+      <div id="l-today"></div>
+      <div id="rituals"></div>
+    </section>
+    <section id="v-list" hidden>
+      <div id="f-list"></div>
+      <div id="l-list"></div>
+    </section>
     <section id="v-cal" hidden></section>
     <section id="v-review" hidden></section>
     <section id="v-setup" hidden></section>
@@ -260,6 +317,10 @@ var calMonth = null;      // "YYYY-MM"
 var calDay = null;
 var openTray = null, openEdit = null, busy = false;
 var trayStep = "mins", trayMins = null, trayEnergy = null;
+var priOnly = false;            // the "needs to happen" filter
+var overTab = "doing";          // doing | keeping
+var addingRitual = null;        // "daily" | "weekly" while the inline form is open
+var lastLoad = 0;
 
 var $ = function(s){ return document.querySelector(s); };
 var box = $("#box"), flash = $("#flash");
@@ -331,6 +392,7 @@ function api(payload){
   }); });
 }
 function load(){
+  lastLoad = Date.now();
   return api({ action:"state" }).then(function(j){
     S = j;
     if (!calMonth) calMonth = monthOf(S.today);
@@ -363,6 +425,16 @@ box.addEventListener("input", function(){
 });
 box.addEventListener("keydown", function(e){
   if (e.key === "Enter" && !e.shiftKey && !/\n/.test(box.value)) { e.preventDefault(); submit(); }
+});
+document.addEventListener("keydown", function(e){
+  if (e.key !== "Enter") return;
+  var t = e.target;
+  if (t && /^rt_|^rn_/.test(t.id || "")) {
+    e.preventDefault();
+    var k = t.id.slice(3);
+    var b = document.querySelector('[data-act="rsave"][data-k="' + k + '"]');
+    if (b) b.click();
+  }
 });
 
 var SRec = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -409,7 +481,7 @@ function rowHTML(t){
     '<div class="rmain">' +
       '<button class="tick" data-act="tray" title="Done">&#10003;</button>' +
       '<div class="rbody" data-act="edit">' +
-        '<div class="rtitle">' + esc(t.title) + "</div>" +
+        '<div class="rtitle">' + (t.priority ? '<span class="prim"></span>' : "") + esc(t.title) + "</div>" +
         '<div class="meta">' +
           '<span class="dot" style="background:' + esc(t.category_color || "#8A8F80") + '"></span>' +
           esc(t.category_name || "Unsorted") + bits.join("") +
@@ -462,6 +534,10 @@ function editHTML(t){
       '<div><label>Minutes</label><input data-f="estimate_minutes" type="number" inputmode="numeric" min="1" value="' + (t.estimate_minutes||15) + '"></div>' +
     "</div>" +
     '<div><label>Due</label><input data-f="due_on" type="date" value="' + esc(t.due_on || "") + '"></div>' +
+    '<div><label>Needs doing soon</label><select data-f="priority">' +
+      '<option value=""' + (t.priority ? "" : " selected") + ">No</option>" +
+      '<option value="1"' + (t.priority ? " selected" : "") + ">Yes, flag it</option>" +
+    "</select></div>" +
     '<div><label>Could someone else do this?</label><select data-f="delegable">' +
       ['','yes','partly','no'].map(function(v){
         var lbl = {"":"Not said","yes":"Anyone could","partly":"Partly","no":"Has to be me"}[v];
@@ -509,37 +585,62 @@ function totalWords(rows){
 function filterBar(){
   var times = [[5,"5 min"],[15,"15 min"],[30,"30 min"],[60,"An hour"],[0,"Any time"]];
   var used = {};
-  S.tasks.forEach(function(t){ used[t.category_name || "Unsorted"] = t.category_color; });
+  S.tasks.forEach(function(t){ used[t.category_name || "Unsorted"] = true; });
   var cats = S.categories.filter(function(c){ return used[c.name]; });
+  var anyPri = S.tasks.some(function(t){ return t.priority; });
 
   return '<div class="filters">' +
     '<div class="frow" data-f="time">' + times.map(function(p){
       return '<button class="chip" data-m="' + p[0] + '" aria-pressed="' + (timeCap === p[0]) + '">' + p[1] + "</button>";
     }).join("") + "</div>" +
-    (cats.length > 1 ? '<div class="frow" data-f="cat">' +
-      '<button class="chip" data-c="" aria-pressed="' + (catFilter === "") + '">Everything</button>' +
+    '<div class="frow" data-f="cat">' +
+      (anyPri ? '<button class="chip pri" data-c="__pri__" aria-pressed="' + priOnly + '">' +
+        '<span class="dot"></span>Needs doing</button>' : "") +
+      '<button class="chip" data-c="" aria-pressed="' + (!priOnly && catFilter === "") + '">Everything</button>' +
       cats.map(function(c){
-        return '<button class="chip" data-c="' + esc(c.name) + '" aria-pressed="' + (catFilter === c.name) + '">' +
+        return '<button class="chip" data-c="' + esc(c.name) + '" aria-pressed="' + (!priOnly && catFilter === c.name) + '">' +
           '<span class="dot" style="background:' + esc(c.color) + '"></span>' + esc(c.name) + "</button>";
-      }).join("") + "</div>" : "") +
+      }).join("") + "</div>" +
   "</div>";
+}
+function syncChips(){
+  [].forEach.call(document.querySelectorAll('.frow[data-f="time"] .chip'), function(b){
+    b.setAttribute("aria-pressed", String(timeCap === +b.dataset.m));
+  });
+  [].forEach.call(document.querySelectorAll('.frow[data-f="cat"] .chip'), function(b){
+    var c = b.dataset.c;
+    b.setAttribute("aria-pressed", String(c === "__pri__" ? priOnly : (!priOnly && catFilter === c)));
+  });
 }
 function pool(){
   return S.tasks.filter(function(t){
+    if (priOnly && !t.priority) return false;
     if (timeCap && eff(t) > timeCap) return false;
-    if (catFilter && (t.category_name || "Unsorted") !== catFilter) return false;
+    if (!priOnly && catFilter && (t.category_name || "Unsorted") !== catFilter) return false;
     return true;
   });
 }
 
 /* ---------------- views ---------------- */
 function renderToday(){
+  document.getElementById("f-today").innerHTML = filterBar();
+  renderTodayList();
+  renderRituals();
+}
+function renderTodayList(){
   var today = S.today, p = pool();
-  var g = { overdue:[], today:[], soon:[], anytime:[], later:[] };
-  p.forEach(function(t){ g[bucketOf(t, today)].push(t); });
+  var pri = [], g = { overdue:[], today:[], soon:[], anytime:[], later:[] };
+  p.forEach(function(t){
+    if (t.priority) pri.push(t); else g[bucketOf(t, today)].push(t);
+  });
+  pri.sort(function(a,b){
+    var ad = a.next_due_on || a.due_on || "9999", bd = b.next_due_on || b.due_on || "9999";
+    return ad < bd ? -1 : ad > bd ? 1 : 0;
+  });
   g.anytime.sort(function(a,b){ return eff(a) - eff(b); });
 
   var body =
+    section("Needs doing", totalWords(pri), pri, "late") +
     section("Late", totalWords(g.overdue), g.overdue, "late") +
     section("Today", totalWords(g.today), g.today) +
     section("This week", totalWords(g.soon), g.soon) +
@@ -547,24 +648,76 @@ function renderToday(){
     section("Later on", totalWords(g.later), g.later);
 
   if (!body) {
-    body = '<div class="empty">' + (timeCap || catFilter
+    body = '<div class="empty">' + (timeCap || catFilter || priOnly
       ? "Nothing matches that filter."
       : "Nothing on the list.<br>Put something in the box above.") + "</div>";
   }
-  $("#v-today").innerHTML = filterBar() + body;
+  document.getElementById("l-today").innerHTML = body;
+}
+
+/* ---------- the things you do on a rhythm ---------- */
+function ritualRow(r, today){
+  var hit = ritualHits(r.id), on = !!hit[today];
+  if (r.kind === "daily") {
+    var st = ritualStreak(r.id, today);
+    return '<div class="rrow' + (on ? " on" : "") + '" data-rid="' + r.id + '">' +
+      '<button class="tick" data-act="ritual">&#10003;</button>' +
+      '<div class="rtitle">' + esc(r.title) + "</div>" +
+      '<div class="rcount">' + (st ? st + "d" : "") + "</div>" +
+      '<button class="more" data-act="rdel" title="Remove">&times;</button></div>';
+  }
+  var ws = weekStart(today), dots = "";
+  for (var i = 0; i < 7; i++) {
+    var d = addDays(ws, i);
+    dots += '<i class="' + (hit[d] ? "hit" : "") + (d === today ? " today" : "") + '"></i>';
+  }
+  var n = weekCount(r.id, today);
+  return '<div class="rrow' + (on ? " on" : "") + '" data-rid="' + r.id + '">' +
+    '<button class="tick" data-act="ritual">&#10003;</button>' +
+    '<div class="rtitle">' + esc(r.title) + "</div>" +
+    '<div class="wk">' + dots + "</div>" +
+    '<div class="rcount">' + n + " of " + r.target_per_week + "</div>" +
+    '<button class="more" data-act="rdel" title="Remove">&times;</button></div>';
+}
+function renderRituals(){
+  var today = S.today, rs = S.rituals || [];
+  var daily = rs.filter(function(r){ return r.kind === "daily"; });
+  var weekly = rs.filter(function(r){ return r.kind === "weekly"; });
+  var dDone = daily.filter(function(r){ return ritualHits(r.id)[today]; }).length;
+
+  function block(kind, title, note, list){
+    var form = addingRitual === kind
+      ? '<div class="addr">' +
+          '<input id="rt_' + kind + '" placeholder="' + (kind === "daily" ? "Something every day" : "Something most weeks") + '">' +
+          (kind === "weekly" ? '<input id="rn_' + kind + '" class="num" type="number" inputmode="numeric" min="1" max="7" value="3">' : "") +
+          '<button class="save" data-act="rsave" data-k="' + kind + '">Add</button></div>'
+      : '<button class="addlink" data-act="radd" data-k="' + kind + '">+ add</button>';
+    return '<h2 class="sec">' + title + (note ? "<span>" + esc(note) + "</span>" : "") + "</h2>" +
+      (list.length ? '<div class="list">' + list.map(function(r){ return ritualRow(r, today); }).join("") + "</div>" : "") +
+      form;
+  }
+
+  document.getElementById("rituals").innerHTML =
+    block("daily", "Every day", daily.length ? dDone + " of " + daily.length : "", daily) +
+    block("weekly", "This week", "", weekly);
 }
 
 function renderList(){
+  document.getElementById("f-list").innerHTML = filterBar();
+  renderListBody();
+}
+function renderListBody(){
   var p = pool(), byCat = {};
   p.forEach(function(t){ var k = t.category_name || "Unsorted"; (byCat[k] = byCat[k] || []).push(t); });
   var body = S.categories.map(function(c){ return c.name; }).filter(function(n){ return byCat[n]; }).map(function(n){
     var rows = byCat[n].slice().sort(function(a,b){
+      if (a.priority !== b.priority) return a.priority ? -1 : 1;
       var ad = a.next_due_on || a.due_on || "9999", bd = b.next_due_on || b.due_on || "9999";
       return ad < bd ? -1 : ad > bd ? 1 : 0;
     });
     return section(n, totalWords(rows), rows);
   }).join("");
-  $("#v-list").innerHTML = filterBar() + (body || '<div class="empty">Nothing matches that filter.</div>');
+  document.getElementById("l-list").innerHTML = body || '<div class="empty">Nothing matches that filter.</div>';
 }
 
 function renderCal(){
@@ -653,13 +806,61 @@ function feelOf(taskId){
   var n=d+f+b;
   return { n:n, drain: n ? d/n : 0, lift: n ? b/n : 0 };
 }
+function weekStart(d){ return addDays(d, -((dow(d) + 6) % 7)); }   // weeks run Monday to Sunday
+function ritualHits(rid){
+  var out = {};
+  (S.ritual_logs || []).forEach(function(l){ if (l.ritual_id === rid) out[l.done_on] = true; });
+  return out;
+}
+function ritualStreak(rid, today){
+  var hit = ritualHits(rid), n = 0;
+  var cur = hit[today] ? today : addDays(today, -1);
+  while (hit[cur]) { n++; cur = addDays(cur, -1); }
+  return n;
+}
+function weekCount(rid, today){
+  var hit = ritualHits(rid), ws = weekStart(today), n = 0;
+  for (var i = 0; i < 7; i++) if (hit[addDays(ws, i)]) n++;
+  return n;
+}
 function hrs(mins){
   var hh = mins/60;
   if (hh < 1) return Math.round(mins) + "m";
   return (hh < 10 ? hh.toFixed(1) : Math.round(hh)) + "h";
 }
 
+function overSubtabs(){
+  return '<div class="subtabs">' +
+    '<button data-act="over" data-o="doing" aria-pressed="' + (overTab==="doing") + '">Getting done</button>' +
+    '<button data-act="over" data-o="keeping" aria-pressed="' + (overTab==="keeping") + '">Keeping up</button></div>';
+}
+
 function renderReview(){
+  $("#v-review").innerHTML = overSubtabs() + (overTab === "doing" ? doingHTML() : keepingHTML());
+}
+
+function keepingHTML(){
+  var today = S.today, rs = S.rituals || [];
+  if (!rs.length) {
+    return '<div class="empty">Nothing on a rhythm yet.<br>Add your daily and weekly things on the To do page.</div>';
+  }
+  return rs.map(function(r){
+    var hit = ritualHits(r.id), cells = "", done = 0;
+    for (var i = 27; i >= 0; i--) {
+      var d = addDays(today, -i);
+      var on = !!hit[d];
+      if (on) done++;
+      cells += '<i class="' + (on ? "hit" : "miss") + '"></i>';
+    }
+    var note = r.kind === "daily"
+      ? done + " of 28 days · " + ritualStreak(r.id, today) + " day streak"
+      : weekCount(r.id, today) + " of " + r.target_per_week + " this week · " + done + " in 4 weeks";
+    return '<div class="consist"><div class="ch"><b>' + esc(r.title) + "</b><span>" + esc(note) + "</span></div>" +
+      '<div class="grid28">' + cells + "</div></div>";
+  }).join("");
+}
+
+function doingHTML(){
   var today = S.today, r = S.recent || [];
   var todayRows = r.filter(function(c){ return c.done_on === today; });
   var days = {}; r.forEach(function(c){ days[c.done_on] = true; });
@@ -671,27 +872,46 @@ function renderReview(){
     '<div class="stat"><b>' + fmtMins(todayRows.reduce(function(a,c){return a+minsOf(c);},0)) + "</b><span>logged today</span></div>" +
     '<div class="stat"><b>' + streak + "</b><span>day streak</span></div></div>";
 
-  var bars = [], max = 1;
+  /* fourteen days, stacked by category so you can see the shape of your week */
+  var colOf = {}; S.categories.forEach(function(c){ colOf[c.id] = c.color; });
+  var nameOf = {}; S.categories.forEach(function(c){ nameOf[c.id] = c.name; });
+  var bars = [], max = 1, seen = {};
   for (var i = 13; i >= 0; i--) {
-    var d = addDays(today, -i);
-    var mn = r.filter(function(c){ return c.done_on === d; }).reduce(function(a,c){ return a + minsOf(c); }, 0);
-    if (mn > max) max = mn;
-    bars.push({ d:d, m:mn });
+    var d = addDays(today, -i), by = {}, tot = 0;
+    r.forEach(function(c){
+      if (c.done_on !== d) return;
+      var k = c.category_id || "none", m = minsOf(c);
+      by[k] = (by[k] || 0) + m; tot += m; seen[k] = true;
+    });
+    if (tot > max) max = tot;
+    bars.push({ d:d, by:by, tot:tot });
   }
-  html += '<h2 class="sec">Last two weeks<span>' + fmtMins(bars.reduce(function(a,b){return a+b.m;},0)) + "</span></h2>" +
+  html += '<h2 class="sec">Last two weeks<span>' + fmtMins(bars.reduce(function(a,b){return a+b.tot;},0)) + "</span></h2>" +
     '<div class="bars">' + bars.map(function(b){
-      var h = Math.max(2, Math.round(b.m / max * 68));
+      var h2 = Math.max(2, Math.round(b.tot / max * 68));
+      var segs = Object.keys(b.by).map(function(k){
+        var frac = b.by[k] / (b.tot || 1);
+        return '<span class="bseg" style="height:' + (frac*100) + "%;background:" + esc(colOf[k] || "#9AA391") + '"></span>';
+      }).join("");
       var lab = new Date(d2n(b.d)).toLocaleDateString(undefined,{weekday:"narrow",timeZone:"UTC"});
-      return '<div class="bcol" title="' + b.d + ": " + fmtMins(b.m) + '"><div class="bfill" style="height:' + h + 'px"></div>' +
+      return '<div class="bcol" title="' + b.d + ": " + fmtMins(b.tot) + '">' +
+             '<div class="bfill" style="height:' + h2 + 'px">' + segs + "</div>" +
              '<div class="blab">' + esc(lab) + "</div></div>";
     }).join("") + "</div>";
+  var legend = Object.keys(seen).filter(function(k){ return nameOf[k]; });
+  if (legend.length > 1) {
+    html += '<div class="blegend">' + legend.map(function(k){
+      return '<span><i class="dot" style="display:inline-block;width:9px;height:9px;border-radius:0 100% 0 100%;transform:rotate(-20deg);background:' +
+        esc(colOf[k]) + '"></i>' + esc(nameOf[k]) + "</span>";
+    }).join("") + "</div>";
+  }
 
   var av = (S.avoidance || []).filter(function(a){ return a.avg_days_late != null && a.avg_days_late > 0; });
   if (av.length) {
     html += '<h2 class="sec">What you put off longest<span>days past due</span></h2><table class="t">' +
       '<tr><th>Task</th><th class="num">Avg late</th><th class="num">Worst</th></tr>' +
       av.slice(0,12).map(function(a){
-        return "<tr><td>" + esc(a.title) + '</td><td class="num bad">' + a.avg_days_late + '</td><td class="num">' + (a.worst_days_late != null ? a.worst_days_late : "—") + "</td></tr>";
+        return "<tr><td>" + esc(a.title) + '</td><td class="num bad">' + a.avg_days_late + '</td><td class="num">' + (a.worst_days_late != null ? a.worst_days_late : "\u2014") + "</td></tr>";
       }).join("") + "</table>";
   }
 
@@ -702,40 +922,28 @@ function renderReview(){
       timed.slice(0,12).map(function(a){
         var off = a.avg_estimate && Math.abs(a.avg_actual - a.avg_estimate) >= Math.max(5, a.avg_estimate * .3);
         return "<tr><td>" + esc(a.title) + '</td><td class="num' + (off ? " bad" : "") + '">' + fmtMins(a.avg_actual) +
-               '</td><td class="num">' + (a.avg_estimate ? fmtMins(a.avg_estimate) : "—") + "</td></tr>";
+               '</td><td class="num">' + (a.avg_estimate ? fmtMins(a.avg_estimate) : "\u2014") + "</td></tr>";
       }).join("") + "</table>";
   }
 
-  var ch = (S.category_history || []).filter(function(c){ return c.samples > 0; });
-  if (ch.length) {
-    html += '<h2 class="sec">By category</h2><table class="t">' +
-      '<tr><th>Category</th><th class="num">Average</th><th class="num">Times</th></tr>' +
-      ch.sort(function(a,b){ return b.samples - a.samples; }).map(function(c){
-        return "<tr><td>" + esc(c.name) + '</td><td class="num">' + fmtMins(c.avg_actual) + '</td><td class="num">' + c.samples + "</td></tr>";
-      }).join("") + "</table>";
-  }
-
-  /* what is worth handing off */
   var cand = S.tasks.map(function(t){
       var f = feelOf(t.id), py = perYear(t), mins = eff(t) * py;
       return { t:t, f:f, py:py, mins:mins, score: mins * (0.6 + f.drain) };
     })
     .filter(function(x){ return (x.t.delegable === "yes" || x.t.delegable === "partly") && x.mins >= 20; })
     .sort(function(a,b){ return b.score - a.score; });
-
   if (cand.length) {
     html += '<h2 class="sec">Worth handing off<span>hours a year</span></h2><table class="t">' +
       '<tr><th>Task</th><th class="num">A year</th><th>How it feels</th></tr>' +
       cand.slice(0,12).map(function(x){
         var note = x.f.n === 0 ? "not rated yet"
           : x.f.drain >= .5 ? "drains you" : x.f.lift >= .5 ? "you like it" : "neutral";
-        return "<tr><td>" + esc(x.t.title) + (x.t.delegable === "partly" ? " <span class=\"pill\">partly</span>" : "") +
+        return "<tr><td>" + esc(x.t.title) + (x.t.delegable === "partly" ? ' <span class="pill">partly</span>' : "") +
           '</td><td class="num' + (x.f.drain >= .5 ? " bad" : "") + '">' + hrs(x.mins) +
           "</td><td>" + note + "</td></tr>";
       }).join("") + "</table>";
   }
 
-  /* and what to protect */
   var keep = S.tasks.map(function(t){ return { t:t, f:feelOf(t.id) }; })
     .filter(function(x){ return x.f.n >= 2 && x.f.lift >= .5; })
     .sort(function(a,b){ return b.f.lift - a.f.lift; });
@@ -767,7 +975,7 @@ function renderReview(){
       "</div></div><button class=\"undo\" data-act=\"undo\">undo</button></div>";
   }).join("") + "</div>";
 
-  $("#v-review").innerHTML = html;
+  return html;
 }
 
 function renderSetup(){
@@ -803,6 +1011,14 @@ function renderSetup(){
   };
 }
 
+/* repaint just the task rows, so opening a tray doesn't rebuild filters and rhythms too */
+function redrawRows(){
+  if (view === "today") renderTodayList();
+  else if (view === "list") renderListBody();
+  else if (view === "cal") renderCal();
+  else render();
+}
+
 function render(){
   ["today","list","cal","review","setup"].forEach(function(v){ $("#v-" + v).hidden = (v !== view); });
   $("#gear").setAttribute("aria-pressed", String(view === "setup"));
@@ -835,6 +1051,7 @@ function currentEdit(row){
     estimate_minutes: Math.max(1, +get("estimate_minutes") || 15),
     due_on: get("due_on") || null,
     delegable: get("delegable") || null,
+    priority: !!get("priority"),
     recur_mode: mode || null, recur_interval_days: null, recur_rule: null
   };
   if (mode === "floating") patch.recur_interval_days = Math.max(1, +get("recur_interval_days") || 7);
@@ -855,24 +1072,68 @@ function currentEdit(row){
 document.addEventListener("click", function(e){
   var chip = e.target.closest(".frow .chip");
   if (chip) {
-    if (chip.parentNode.dataset.f === "time") timeCap = +chip.dataset.m;
-    else catFilter = chip.dataset.c;
-    render();
+    if (chip.parentNode.dataset.f === "time") {
+      timeCap = +chip.dataset.m;
+    } else if (chip.dataset.c === "__pri__") {
+      priOnly = !priOnly; catFilter = "";
+    } else {
+      priOnly = false; catFilter = chip.dataset.c;
+    }
+    /* only the list is rebuilt, so the chips never flicker or lose their place */
+    syncChips();
+    if (view === "today") renderTodayList(); else if (view === "list") renderListBody();
     return;
   }
   var btn = e.target.closest("[data-act]");
   if (!btn) return;
   var act = btn.dataset.act, row = btn.closest(".row"), id = row ? row.dataset.id : null;
 
+  if (act === "over") {
+    overTab = btn.dataset.o; renderReview(); return;
+  }
+  if (act === "radd") { addingRitual = btn.dataset.k; renderRituals();
+    var f = document.getElementById("rt_" + btn.dataset.k); if (f) f.focus(); return; }
+  if (act === "rsave") {
+    var k = btn.dataset.k;
+    var ti = document.getElementById("rt_" + k), nn = document.getElementById("rn_" + k);
+    var title = ti ? ti.value.trim() : "";
+    if (!title) { if (ti) ti.focus(); return; }
+    addingRitual = null;
+    api({ action:"add_ritual", title:title, kind:k,
+          target_per_week: nn ? +nn.value : 7 })
+      .then(function(){ return load(); }).catch(function(err){ say(esc(err.message)); });
+    return;
+  }
+  if (act === "ritual" || act === "rdel") {
+    var rrow = btn.closest(".rrow"), rid = rrow ? rrow.dataset.rid : null;
+    if (!rid) return;
+    if (act === "rdel") {
+      if (!confirm("Remove this from your rhythms? The history goes too.")) return;
+      api({ action:"delete_ritual", id:rid }).then(function(){ return load(); })
+        .catch(function(err){ say(esc(err.message)); });
+      return;
+    }
+    /* update our own copy first so the tick lands instantly, then tell the server */
+    var wasOn = !!ritualHits(rid)[S.today];
+    S.ritual_logs = (S.ritual_logs || []).filter(function(l){
+      return !(l.ritual_id === rid && l.done_on === S.today);
+    });
+    if (!wasOn) S.ritual_logs.push({ id:"local", ritual_id:rid, done_on:S.today });
+    renderRituals();
+    api({ action:"toggle_ritual", id:rid })
+      .catch(function(err){ say(esc(err.message)); return load(); });
+    return;
+  }
+
   if (act === "mon") { calMonth = shiftMonth(calMonth, +btn.dataset.n); calDay = null; renderCal(); return; }
   if (act === "day") { calDay = (calDay === btn.dataset.d) ? null : btn.dataset.d; renderCal(); return; }
-  if (act === "tray") { openTray = (openTray === id) ? null : id; openEdit = null; trayStep = "mins"; trayMins = trayEnergy = null; render(); return; }
-  if (act === "edit") { openEdit = (openEdit === id) ? null : id; openTray = null; render(); return; }
+  if (act === "tray") { openTray = (openTray === id) ? null : id; openEdit = null; trayStep = "mins"; trayMins = trayEnergy = null; redrawRows(); return; }
+  if (act === "edit") { openEdit = (openEdit === id) ? null : id; openTray = null; redrawRows(); return; }
 
   if (act === "done") {
     trayMins = btn.dataset.m === "" ? null : +btn.dataset.m;
     trayStep = "energy";
-    render();
+    redrawRows();
     return;
   }
 
@@ -883,7 +1144,7 @@ document.addEventListener("click", function(e){
 
     if (act === "energy") {
       trayEnergy = btn.dataset.e || null;
-      if (task && !task.delegable) { trayStep = "deleg"; render(); return; }
+      if (task && !task.delegable) { trayStep = "deleg"; redrawRows(); return; }
     }
     var deleg = act === "deleg" ? (btn.dataset.d || null) : null;
 
@@ -949,7 +1210,10 @@ document.addEventListener("change", function(e){
   }
 });
 
-document.addEventListener("visibilitychange", function(){ if (!document.hidden) load(); });
+document.addEventListener("visibilitychange", function(){
+  /* coming back to the tab shouldn't cost a round trip every time */
+  if (!document.hidden && Date.now() - lastLoad > 45000) load();
+});
 
 if (!KEY) {
   $("#v-today").innerHTML =
